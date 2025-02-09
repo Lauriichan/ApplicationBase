@@ -6,12 +6,43 @@
     <artifactId>applicationbase-parent</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
+    <modules>
+        <module>applicationbase-core</module>
+        <module>applicationbase-ui</module>
+    </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <laylib.version>0.4.1-SNAPSHOT</laylib.version>
         <fastutil.version>8.5.15</fastutil.version>
         <maven-source-plugin.version>2.0.0</maven-source-plugin.version>
+        <target.java.version>21</target.java.version>
     </properties>
+    
+    <profiles>
+        <profile>
+            <id>release</id>
+            <distributionManagement>
+                <repository>
+                    <id>lauriichan</id>
+                    <name>Lauriichan Maven Repository (Release)</name>
+                    <url>https://maven.lauriichan.me/release</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+    </profiles>
+    <repositories>
+        <repository>
+            <id>lauriichan-release</id>
+            <name>Lauriichan Maven Repository</name>
+            <url>https://maven.lauriichan.me/release</url>
+        </repository>
+        <repository>
+            <id>lauriichan-snapshot</id>
+            <name>Lauriichan Maven Repository</name>
+            <url>https://maven.lauriichan.me/snapshot</url>
+        </repository>
+    </repositories>
+    
     <dependencies>
 
         <!-- Laylib -->
@@ -60,8 +91,5 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-    <modules>
-        <module>applicationbase-core</module>
-        <module>applicationbase-ui</module>
-    </modules>
+    
 </project>
