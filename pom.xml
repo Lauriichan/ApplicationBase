@@ -1,0 +1,67 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>me.lauriichan.applicationbase</groupId>
+    <artifactId>applicationbase-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <laylib.version>0.4.1-SNAPSHOT</laylib.version>
+        <fastutil.version>8.5.15</fastutil.version>
+        <maven-source-plugin.version>2.0.0</maven-source-plugin.version>
+    </properties>
+    <dependencies>
+
+        <!-- Laylib -->
+        <dependency>
+            <groupId>me.lauriichan.laylib</groupId>
+            <artifactId>json</artifactId>
+            <version>${laylib.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>me.lauriichan.laylib</groupId>
+            <artifactId>localization</artifactId>
+            <version>${laylib.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>me.lauriichan.laylib</groupId>
+            <artifactId>reflection</artifactId>
+            <version>${laylib.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>me.lauriichan.laylib</groupId>
+            <artifactId>logger</artifactId>
+            <version>${laylib.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>me.lauriichan.laylib</groupId>
+            <artifactId>command</artifactId>
+            <version>${laylib.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>${fastutil.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>me.lauriichan.maven</groupId>
+            <artifactId>maven-source-modification-plugin</artifactId>
+            <version>${maven-source-plugin.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+    <modules>
+        <module>applicationbase-core</module>
+        <module>applicationbase-ui</module>
+    </modules>
+</project>
