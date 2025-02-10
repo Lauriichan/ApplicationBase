@@ -4,16 +4,44 @@ import java.awt.Color;
 import java.util.Objects;
 
 public final class SimpleColor {
-    
+
     public static SimpleColor sRGB(String hex) {
         return sRGB(ColorParser.parse(hex));
     }
 
     public static SimpleColor sRGB(Color awtColor) {
         SimpleColor color = new SimpleColor(ColorType.SRGB);
+        color.alpha = awtColor.getAlpha();
         color.red = awtColor.getRed() / 255d;
         color.green = awtColor.getGreen() / 255d;
         color.blue = awtColor.getBlue() / 255d;
+        return color;
+    }
+
+    public static SimpleColor sRGB(double red, double green, double blue, double alpha) {
+        SimpleColor color = new SimpleColor(ColorType.SRGB);
+        color.alpha = alpha;
+        color.red = red;
+        color.green = green;
+        color.blue = blue;
+        return color;
+    }
+
+    public static SimpleColor lRGB(double red, double green, double blue, double alpha) {
+        SimpleColor color = new SimpleColor(ColorType.LRGB);
+        color.alpha = alpha;
+        color.red = red;
+        color.green = green;
+        color.blue = blue;
+        return color;
+    }
+
+    public static SimpleColor okLab(double l, double a, double b, double alpha) {
+        SimpleColor color = new SimpleColor(ColorType.OKLAB);
+        color.alpha = alpha;
+        color.red = l;
+        color.green = a;
+        color.blue = b;
         return color;
     }
 
@@ -52,9 +80,22 @@ public final class SimpleColor {
     // b = green / m
     // c = blue / s
     private volatile double red = 0d, green = 0d, blue = 0d;
+    private volatile double alpha = 1d;
 
     public SimpleColor(final ColorType type) {
         this.type = Objects.requireNonNull(type, "ColorType can't be null");
+    }
+
+    public int awtAlpha() {
+        return toIntRGB(alpha);
+    }
+
+    public double alpha() {
+        return alpha;
+    }
+
+    public void alpha(double alpha) {
+        this.alpha = alpha;
     }
 
     public int awtRed() {
@@ -93,7 +134,16 @@ public final class SimpleColor {
         this.blue = blue;
     }
 
+    public SimpleColor set(SimpleColor color) {
+        this.alpha = color.alpha;
+        this.red = color.red;
+        this.green = color.green;
+        this.blue = color.blue;
+        return this;
+    }
+
     public SimpleColor subtract(double value) {
+        this.alpha -= value;
         this.red -= value;
         this.green -= value;
         this.blue -= value;
@@ -104,6 +154,7 @@ public final class SimpleColor {
         if (type != color.type) {
             return subtract(color.as(type));
         }
+        this.alpha -= color.alpha;
         this.red -= color.red;
         this.green -= color.green;
         this.blue -= color.blue;
@@ -114,6 +165,7 @@ public final class SimpleColor {
         if (type != color.type) {
             return subtractTo(color.as(type));
         }
+        color.alpha -= alpha;
         color.red -= red;
         color.green -= green;
         color.blue -= blue;
@@ -121,6 +173,7 @@ public final class SimpleColor {
     }
 
     public SimpleColor add(double value) {
+        this.alpha += value;
         this.red += value;
         this.green += value;
         this.blue += value;
@@ -131,6 +184,7 @@ public final class SimpleColor {
         if (type != color.type) {
             return add(color.as(type));
         }
+        this.alpha += color.alpha;
         this.red += color.red;
         this.green += color.green;
         this.blue += color.blue;
@@ -141,6 +195,7 @@ public final class SimpleColor {
         if (type != color.type) {
             return addTo(color.as(type));
         }
+        color.alpha += alpha;
         color.red += red;
         color.green += green;
         color.blue += blue;
@@ -148,6 +203,7 @@ public final class SimpleColor {
     }
 
     public SimpleColor multiply(double value) {
+        this.alpha *= value;
         this.red *= value;
         this.green *= value;
         this.blue *= value;
@@ -158,6 +214,7 @@ public final class SimpleColor {
         if (type != color.type) {
             return multiply(color.as(type));
         }
+        this.alpha *= color.alpha;
         this.red *= color.red;
         this.green *= color.green;
         this.blue *= color.blue;
@@ -168,9 +225,26 @@ public final class SimpleColor {
         if (type != color.type) {
             return multiplyTo(color.as(type));
         }
+        color.alpha *= alpha;
         color.red *= red;
         color.green *= green;
         color.blue *= blue;
+        return this;
+    }
+
+    public SimpleColor interpolate(SimpleColor start, SimpleColor end, double progress) {
+        set(start);
+        convertToOkLab(start.type);
+        double sRed = this.red * (1d - progress);
+        double sGreen = this.green * (1d - progress);
+        double sBlue = this.blue * (1d - progress);
+        set(end);
+        convertToOkLab(end.type);
+        this.red = red * progress + sRed;
+        this.green = green * progress + sGreen;
+        this.blue = blue * progress + sBlue;
+        this.alpha = start.alpha * (1d - progress) + end.alpha * progress;
+        convert(ColorType.OKLAB, type);
         return this;
     }
 
@@ -185,6 +259,7 @@ public final class SimpleColor {
 
     public SimpleColor duplicate() {
         SimpleColor color = new SimpleColor(type);
+        color.alpha = alpha;
         color.red = red;
         color.green = green;
         color.blue = blue;
@@ -196,6 +271,7 @@ public final class SimpleColor {
         case SRGB -> this;
         case LRGB -> {
             SimpleColor color = new SimpleColor(ColorType.SRGB);
+            color.alpha = alpha;
             color.red = lrgb2srgb(red);
             color.green = lrgb2srgb(green);
             color.blue = lrgb2srgb(blue);
@@ -203,6 +279,7 @@ public final class SimpleColor {
         }
         case OKLAB -> {
             SimpleColor color = new SimpleColor(ColorType.SRGB);
+            color.alpha = alpha;
             color.red = red;
             color.green = green;
             color.blue = blue;
@@ -221,6 +298,7 @@ public final class SimpleColor {
         case LRGB -> this;
         case SRGB -> {
             SimpleColor color = new SimpleColor(ColorType.LRGB);
+            color.alpha = alpha;
             color.red = srgb2lrgb(red);
             color.green = srgb2lrgb(green);
             color.blue = srgb2lrgb(blue);
@@ -228,6 +306,7 @@ public final class SimpleColor {
         }
         case OKLAB -> {
             SimpleColor color = new SimpleColor(ColorType.LRGB);
+            color.alpha = alpha;
             color.red = red;
             color.green = green;
             color.blue = blue;
@@ -243,6 +322,7 @@ public final class SimpleColor {
         case OKLAB -> this;
         case LRGB -> {
             SimpleColor color = new SimpleColor(ColorType.OKLAB);
+            color.alpha = alpha;
             color.red = red;
             color.green = green;
             color.blue = blue;
@@ -251,6 +331,7 @@ public final class SimpleColor {
         }
         case SRGB -> {
             SimpleColor color = new SimpleColor(ColorType.OKLAB);
+            color.alpha = alpha;
             color.red = srgb2lrgb(red);
             color.green = srgb2lrgb(green);
             color.blue = srgb2lrgb(blue);
@@ -263,7 +344,68 @@ public final class SimpleColor {
 
     public Color asAwtColor() {
         SimpleColor color = toSRGB();
-        return new Color(color.awtRed(), color.awtGreen(), color.awtBlue(), 255);
+        return new Color(color.awtRed(), color.awtGreen(), color.awtBlue(), color.awtAlpha());
+    }
+
+    /*
+     * Converters
+     */
+
+    private void convert(ColorType from, ColorType to) {
+        switch (type) {
+        case LRGB -> convertToLRGB(from);
+        case OKLAB -> convertToOkLab(from);
+        case SRGB -> convertToSRGB(from);
+        }
+    }
+
+    private void convertToLRGB(ColorType from) {
+        switch (from) {
+        case OKLAB -> {
+            oklab2lrgb(this);
+        }
+        case SRGB -> {
+            red = srgb2lrgb(red);
+            green = srgb2lrgb(green);
+            blue = srgb2lrgb(blue);
+        }
+        default -> {
+        }
+        }
+    }
+
+    private void convertToSRGB(ColorType from) {
+        switch (from) {
+        case LRGB -> {
+            red = lrgb2srgb(red);
+            green = lrgb2srgb(green);
+            blue = lrgb2srgb(blue);
+        }
+        case OKLAB -> {
+            oklab2lrgb(this);
+            red = lrgb2srgb(red);
+            green = lrgb2srgb(green);
+            blue = lrgb2srgb(blue);
+        }
+        default -> {
+        }
+        }
+    }
+
+    private void convertToOkLab(ColorType from) {
+        switch (from) {
+        case LRGB -> {
+            lrgb2oklab(this);
+        }
+        case SRGB -> {
+            red = srgb2lrgb(red);
+            green = srgb2lrgb(green);
+            blue = srgb2lrgb(blue);
+            lrgb2oklab(this);
+        }
+        default -> {
+        }
+        }
     }
 
     /*
@@ -293,7 +435,7 @@ public final class SimpleColor {
         double l = cube(color.red + color.green * 0.3963377774d + color.blue * 0.2158037573d);
         double m = cube(color.red - color.green * 0.1055613458d - color.blue * 0.0638541728d);
         double s = cube(color.red - color.green * 0.0894841775d - color.blue * 1.2914855480d);
-        color.red = l *  4.0767416621d - m * 3.3077115913d + s * 0.2309699292d;
+        color.red = l * 4.0767416621d - m * 3.3077115913d + s * 0.2309699292d;
         color.green = l * -1.2684380046d + m * 2.6097574011d - s * 0.3413193965d;
         color.blue = l * -0.0041960863d - m * 0.7034186147d + s * 1.7076147010d;
     }

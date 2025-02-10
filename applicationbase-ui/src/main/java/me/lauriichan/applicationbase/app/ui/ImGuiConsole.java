@@ -80,7 +80,7 @@ public final class ImGuiConsole {
             ObjectArrayList<String> list = new ObjectArrayList<>(additionalIdentifiers);
             list.add(0, name);
             this.identifiers = ObjectLists.unmodifiable(list);
-            this.color = ImColor.rgb(ColorParser.parseOrDefault(hex, Color.WHITE));
+            this.color = ImColor.rgb(ColorParser.parse(hex, Color.WHITE));
             INT_VALUES.add(this);
         }
 
@@ -97,7 +97,7 @@ public final class ImGuiConsole {
         }
 
         public void color(String hex) {
-            this.color = ImColor.rgb(ColorParser.parseOrDefault(hex, Color.WHITE));
+            this.color = ImColor.rgb(ColorParser.parse(hex, Color.WHITE));
         }
 
         @Override

@@ -80,48 +80,49 @@ public final class DockNode {
         if (parent != null) {
             return parent.build();
         }
-        return new ImGuiDock(buildNode(1f));
+        return new ImGuiDock(buildNode());
     }
 
-    private ImGuiDockNode buildNode(float total) {
-        switch (children.size()) {
-        case 0:
+    private static record StackNode(float ratio, DockNode leftNode, DockNode rightNode) {}
+
+    private ImGuiDockNode buildNode() {
+        if (children.isEmpty()) {
             if (parent != null && (id == null || id.isBlank())) {
                 throw new IllegalArgumentException("Child has null id");
             }
-            return new ImGuiDockNode(parent == null ? "root" : id, weight / total, 0, null, null);
-        case 1:
-            return children.get(0).buildNode(1f);
-        case 2:
-            float sum = children.get(0).weight() + children.get(1).weight();
-            return new ImGuiDockNode(id, weight / total, direction.numValue(), children.get(0).buildNode(sum),
-                children.get(1).buildNode(sum));
+            return new ImGuiDockNode(parent == null ? "root" : id, 1f, 0, null, null);
         }
+        if (children.size() == 1) {
+            return children.get(0).weight(1f).buildNode();
+        }
+        ObjectArrayList<DockNode> childStack = new ObjectArrayList<>();
         float sum = 0f;
         for (DockNode child : children) {
             sum += child.weight();
+            childStack.add(child);
         }
-        ObjectArrayList<DockNode> stack = new ObjectArrayList<>();
-        float temp;
-        for (int i = 0; i < children.size(); i++) {
-            DockNode node = children.get(i);
-            temp = node.weight();
-            node.weight(temp / sum);
-            sum -= temp;
-            stack.push(node);
-            if (sum == 0f) {
-                break;
+        ObjectArrayList<StackNode> outStack = new ObjectArrayList<>();
+        while (!childStack.isEmpty()) {
+            DockNode current = childStack.removeFirst();
+            float weight = current.weight() / sum;
+            if (childStack.size() == 1) {
+                outStack.push(new StackNode(weight, current, childStack.removeFirst()));
+                continue;
             }
-            stack.push(new DockNode(this).weight(1f - node.weight()).id("temp-" + node.id));
+            sum -= current.weight();
+            outStack.push(new StackNode(weight, current, new DockNode(this).id("temp-" + current.id)));
         }
-        DockNode first = stack.remove(0);
-        DockNode node = stack.pop();
-        ImGuiDockNode other = node.buildNode(1f);
-        while (!stack.isEmpty()) {
-            node = stack.pop();
-            other = new ImGuiDockNode(node.id, node.weight(), direction.numValue(), node.buildNode(1f), other);
+        ImGuiDockNode last = null;
+        while (!outStack.isEmpty()) {
+            StackNode stackNode = outStack.pop();
+            String nodeId = id;
+            if (!outStack.isEmpty()) {
+                nodeId = outStack.peek(0).rightNode().id();
+            }
+            last = new ImGuiDockNode(nodeId, stackNode.ratio(), direction.numValue(), stackNode.leftNode().buildNode(),
+                last != null ? last : stackNode.rightNode().buildNode());
         }
-        return new ImGuiDockNode(id, first.weight(), direction.numValue(), first.buildNode(1f), other);
+        return last;
     }
 
 }

@@ -86,8 +86,11 @@ public final class ImGuiDock {
             queue.add(node);
             while (!queue.isEmpty()) {
                 ImGuiDockNode next = queue.pop();
-                System.out.println("Splitting '" + next.dockId + "': " + next.first.ratio);
-                ImGui.dockBuilderSplitNode(next.id.get(), next.splitDirection, next.first.ratio, next.first.id, next.second.id);
+                if (next.first == null || next.second == null) {
+                    continue;
+                }
+                System.out.println("Splitting '" + next.dockId + "': " + next.ratio);
+                ImGui.dockBuilderSplitNode(next.id.get(), next.splitDirection, next.ratio, next.first.id, next.second.id);
                 if (next.first.first != null) {
                     queue.push(next.first);
                 } else {

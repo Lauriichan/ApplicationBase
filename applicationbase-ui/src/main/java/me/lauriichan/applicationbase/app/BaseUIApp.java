@@ -3,9 +3,6 @@ package me.lauriichan.applicationbase.app;
 import java.io.File;
 
 import imgui.ImGuiIO;
-import imgui.app.Application;
-import imgui.app.Color;
-import imgui.app.Configuration;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.internal.ImGui;
 import imgui.internal.ImGuiContext;
@@ -37,7 +34,7 @@ public abstract class BaseUIApp extends BaseApp {
     public static final AppPhase PHASE_IMGUI_DISPOSE_APP = new AppPhase("imgui-dispose", true);
     public static final AppPhase PHASE_IMGUI_DISPOSE_CORE = new AppPhase("imgui-dispose", false);
     
-    private volatile ApplicationAdapter adapter;
+    private volatile ImGuiHandle handle;
     
     private volatile IExtensionPool<DockUIExtension> dockUiPool;
     private volatile ImGuiDock imGuiDock;
@@ -63,34 +60,47 @@ public abstract class BaseUIApp extends BaseApp {
     
     @Override
     protected void onCorePostExecute() throws Throwable {
-        Application.launch(adapter = new ApplicationAdapter(this));
+        (handle = new ImGuiHandle(this)).execute();
     }
     
     /*
      * Implementation
      */
     
-    final void onImGuiConfigure(final Configuration configuration) {
+    final void onImGuiConfigure(final ImGuiHandle.Config config) {
         try {
-            onCoreImGuiConfigure(configuration);
+            onCoreImGuiConfigure(config);
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_CONFIGURE_CORE, throwable);
         }
         try {
-            onAppImGuiConfigure(configuration);
+            onAppImGuiConfigure(config);
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_CONFIGURE_APP, throwable);
         }
     }
     
-    final void onImGuiSetup(final ImGuiContext context, final Configuration configuration) {
+    final void onGlfwSetup(final ImGuiHandle.Config config) {
         try {
-            onCoreImGuiSetup(context, configuration);
+            onCoreGlfwSetup(config);
+        } catch (final Throwable throwable) {
+            onAppError(PHASE_IMGUI_CONFIGURE_CORE, throwable);
+        }
+        try {
+            onAppGlfwSetup(config);
+        } catch (final Throwable throwable) {
+            onAppError(PHASE_IMGUI_CONFIGURE_APP, throwable);
+        }
+    }
+    
+    final void onImGuiSetup(final ImGuiContext context, final ImGuiHandle.Config config) {
+        try {
+            onCoreImGuiSetup(context, config);
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_SETUP_CORE, throwable);
         }
         try {
-            onAppImGuiSetup(context, configuration);
+            onAppImGuiSetup(context, config);
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_SETUP_APP, throwable);
         }
@@ -98,12 +108,12 @@ public abstract class BaseUIApp extends BaseApp {
     
     final void onImGuiStart() {
         try {
-            onCoreImGuiStart();
+            onCoreImGuiStart(handle.handle());
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_START_CORE, throwable);
         }
         try {
-            onAppImGuiStart();
+            onAppImGuiStart(handle.handle());
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_START_APP, throwable);
         }
@@ -166,21 +176,23 @@ public abstract class BaseUIApp extends BaseApp {
      * Core
      */
 
-    protected void onCoreImGuiConfigure(final Configuration configuration) throws Throwable {}
+    protected void onCoreImGuiConfigure(final ImGuiHandle.Config config) throws Throwable {}
 
-    protected void onCoreImGuiSetup(final ImGuiContext context, final Configuration configuration) throws Throwable {
+    protected void onCoreGlfwSetup(final ImGuiHandle.Config config) throws Throwable {}
+
+    protected void onCoreImGuiSetup(final ImGuiContext context, final ImGuiHandle.Config config) throws Throwable {
         ImGuiIO io = ImGui.getIO();
         io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
         io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
     }
     
-    protected void onCoreImGuiStart() throws Throwable {}
+    protected void onCoreImGuiStart(long windowHandle) throws Throwable {}
 
     protected void onCorePreUpdate() throws Throwable {}
 
     protected void onCoreUpdate() throws Throwable {
         imGuiDock.render(this);
-        dockUiPool().callInstances(dock -> dock.render());
+        dockUiPool().callInstances(dock -> dock.render(handle.handle()));
     }
 
     protected void onCorePostUpdate() throws Throwable {}
@@ -191,11 +203,13 @@ public abstract class BaseUIApp extends BaseApp {
      * App Abstraction
      */
 
-    protected void onAppImGuiConfigure(final Configuration configuration) throws Throwable {}
+    protected void onAppImGuiConfigure(final ImGuiHandle.Config config) throws Throwable {}
 
-    protected void onAppImGuiSetup(final ImGuiContext context, final Configuration configuration) throws Throwable {}
+    protected void onAppGlfwSetup(final ImGuiHandle.Config config) throws Throwable {}
+
+    protected void onAppImGuiSetup(final ImGuiContext context, final ImGuiHandle.Config config) throws Throwable {}
     
-    protected void onAppImGuiStart() throws Throwable {}
+    protected void onAppImGuiStart(long windowHandle) throws Throwable {}
 
     protected void onAppPreUpdate() throws Throwable {}
 
@@ -215,12 +229,8 @@ public abstract class BaseUIApp extends BaseApp {
      * Getter
      */
     
-    public final long getWindowHandle() {
-        return adapter.getHandle();
-    }
-    
-    public final Color getWindowBackground() {
-        return adapter.getColorBg();
+    public final ImGuiHandle handle() {
+        return handle;
     }
     
     public final IExtensionPool<DockUIExtension> dockUiPool() {

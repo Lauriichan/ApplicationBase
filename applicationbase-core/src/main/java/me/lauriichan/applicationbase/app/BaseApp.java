@@ -50,8 +50,8 @@ public abstract class BaseApp {
 
     private static final AtomicReference<BaseApp> APP = new AtomicReference<>();
 
-    public static File getJarFile() throws URISyntaxException {
-        return new File(BaseApp.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+    public static File getJarFile(Class<?> clazz) throws URISyntaxException {
+        return new File(clazz.getProtectionDomain().getCodeSource().getLocation().toURI());
     }
 
     public static BaseApp get() {

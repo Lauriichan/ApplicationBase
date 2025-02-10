@@ -24,17 +24,25 @@ public abstract class DockUIExtension implements IExtension {
         return dockId;
     }
 
-    public final void render() {
+    public final void render(long windowHandle) {
+        pushWindowStyle();
         if (ImGui.begin(title, windowFlags())) {
-            renderContent();
+            renderContent(windowHandle);
         }
         ImGui.end();
+        popWindowStyle();
     }
 
     protected int windowFlags() {
         return ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse;
     }
+    
+    protected void pushWindowStyle() {
+    }
 
-    protected abstract void renderContent();
+    protected abstract void renderContent(long windowHandle);
 
+    protected void popWindowStyle() {
+    }
+    
 }
