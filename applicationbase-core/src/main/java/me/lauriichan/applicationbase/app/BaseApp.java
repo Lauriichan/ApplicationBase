@@ -2,6 +2,8 @@ package me.lauriichan.applicationbase.app;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystemNotFoundException;
@@ -284,6 +286,17 @@ public abstract class BaseApp {
 
     public final IDataSource resource(final String path) {
         return resourceManager.resolve(path);
+    }
+
+    public final IDataSource externalResource(final String internalPath, final String externalPath) throws IOException {
+        IDataSource internal = resourceManager.resolve(internalPath);
+        IDataSource external = resourceManager.resolve(externalPath);
+        try (OutputStream output = external.openWritableStream()) {
+            try (InputStream input = internal.openReadableStream()) {
+                input.transferTo(output);
+            }
+        }
+        return external;
     }
 
     public final <E extends IExtension> IExtensionPool<E> extension(final Class<E> type, final boolean instantiate) {
