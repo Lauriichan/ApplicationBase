@@ -86,7 +86,7 @@ public final class SimpleColor {
         this.type = Objects.requireNonNull(type, "ColorType can't be null");
     }
 
-    public int awtAlpha() {
+    public int alphaInt() {
         return toIntRGB(alpha);
     }
 
@@ -98,7 +98,7 @@ public final class SimpleColor {
         this.alpha = alpha;
     }
 
-    public int awtRed() {
+    public int redInt() {
         return toIntRGB(red);
     }
 
@@ -110,7 +110,7 @@ public final class SimpleColor {
         this.red = red;
     }
 
-    public int awtGreen() {
+    public int greenInt() {
         return toIntRGB(green);
     }
 
@@ -122,7 +122,7 @@ public final class SimpleColor {
         this.green = green;
     }
 
-    public int awtBlue() {
+    public int blueInt() {
         return toIntRGB(blue);
     }
 
@@ -133,12 +133,21 @@ public final class SimpleColor {
     public void blue(double blue) {
         this.blue = blue;
     }
+    
+    public int asABGR() {
+        return toIntRGB(alpha) << 24 | toIntRGB(blue) << 16 | toIntRGB(green) << 8 | toIntRGB(red);
+    }
+
+    public int asRGBA() {
+        return toIntRGB(red) << 24 | toIntRGB(green) << 16 | toIntRGB(blue) << 8 | toIntRGB(alpha);
+    }
 
     public SimpleColor set(SimpleColor color) {
         this.alpha = color.alpha;
         this.red = color.red;
         this.green = color.green;
         this.blue = color.blue;
+        convert(color.type, type);
         return this;
     }
 
@@ -233,12 +242,18 @@ public final class SimpleColor {
     }
 
     public SimpleColor interpolate(SimpleColor start, SimpleColor end, double progress) {
-        set(start);
+        this.alpha = start.alpha;
+        this.red = start.red;
+        this.green = start.green;
+        this.blue = start.blue;
         convertToOkLab(start.type);
         double sRed = this.red * (1d - progress);
         double sGreen = this.green * (1d - progress);
         double sBlue = this.blue * (1d - progress);
-        set(end);
+        this.alpha = end.alpha;
+        this.red = end.red;
+        this.green = end.green;
+        this.blue = end.blue;
         convertToOkLab(end.type);
         this.red = red * progress + sRed;
         this.green = green * progress + sGreen;
@@ -343,8 +358,7 @@ public final class SimpleColor {
     }
 
     public Color asAwtColor() {
-        SimpleColor color = toSRGB();
-        return new Color(color.awtRed(), color.awtGreen(), color.awtBlue(), color.awtAlpha());
+        return new Color(toSRGB().asRGBA());
     }
 
     /*
@@ -444,7 +458,7 @@ public final class SimpleColor {
         return value * value * value;
     }
 
-    private static int toIntRGB(double value) {
+    public static int toIntRGB(double value) {
         return Math.min(Math.max((int) Math.round(value * 255), 0), 255);
     }
 

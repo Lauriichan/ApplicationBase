@@ -9,7 +9,7 @@ import imgui.ImVec2;
 import imgui.type.ImInt;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import me.lauriichan.applicationbase.app.BaseUIApp;
+import me.lauriichan.applicationbase.app.ui.BaseUIApp;
 
 public final class ImGuiDock {
 

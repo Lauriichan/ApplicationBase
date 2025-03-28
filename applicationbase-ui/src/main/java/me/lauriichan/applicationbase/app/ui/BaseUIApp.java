@@ -1,4 +1,4 @@
-package me.lauriichan.applicationbase.app;
+package me.lauriichan.applicationbase.app.ui;
 
 import java.io.File;
 
@@ -6,6 +6,7 @@ import imgui.ImGuiIO;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.internal.ImGui;
 import imgui.internal.ImGuiContext;
+import me.lauriichan.applicationbase.app.BaseApp;
 import me.lauriichan.applicationbase.app.extension.IExtensionPool;
 import me.lauriichan.applicationbase.app.ui.dock.DockNode;
 import me.lauriichan.applicationbase.app.ui.dock.DockUIExtension;
@@ -19,8 +20,9 @@ public abstract class BaseUIApp extends BaseApp {
     public static final AppPhase PHASE_IMGUI_SETUP_CORE = new AppPhase("imgui-setup", false);
     public static final AppPhase PHASE_IMGUI_SETUP_APP = new AppPhase("imgui-setup", true);
 
-    public static final AppPhase PHASE_IMGUI_START_CORE = new AppPhase("imgui-start", false);
     public static final AppPhase PHASE_IMGUI_START_APP = new AppPhase("imgui-start", true);
+    public static final AppPhase PHASE_IMGUI_START_CORE = new AppPhase("imgui-start", false);
+    public static final AppPhase PHASE_IMGUI_POST_START_APP = new AppPhase("imgui-start-post", true);
 
     public static final AppPhase PHASE_IMGUI_UPDATE_PRE_CORE = new AppPhase("imgui-update-pre", false);
     public static final AppPhase PHASE_IMGUI_UPDATE_PRE_APP = new AppPhase("imgui-update-pre", true);
@@ -47,7 +49,6 @@ public abstract class BaseUIApp extends BaseApp {
     protected void onCoreReady() throws Throwable {
         super.onCoreReady();
         logger().setDebug(true);
-        dockUiPool = extension(DockUIExtension.class, true);
     }
     
     @Override
@@ -108,14 +109,19 @@ public abstract class BaseUIApp extends BaseApp {
     
     final void onImGuiStart() {
         try {
+            onAppImGuiStart(handle.handle());
+        } catch (final Throwable throwable) {
+            onAppError(PHASE_IMGUI_START_APP, throwable);
+        }
+        try {
             onCoreImGuiStart(handle.handle());
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_START_CORE, throwable);
         }
         try {
-            onAppImGuiStart(handle.handle());
+            onAppImGuiPostStart(handle.handle());
         } catch (final Throwable throwable) {
-            onAppError(PHASE_IMGUI_START_APP, throwable);
+            onAppError(PHASE_IMGUI_POST_START_APP, throwable);
         }
     }
     
@@ -186,7 +192,9 @@ public abstract class BaseUIApp extends BaseApp {
         io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
     }
     
-    protected void onCoreImGuiStart(long windowHandle) throws Throwable {}
+    protected void onCoreImGuiStart(long windowHandle) throws Throwable {
+        dockUiPool = extension(DockUIExtension.class, true);
+    }
 
     protected void onCorePreUpdate() throws Throwable {}
 
@@ -210,6 +218,8 @@ public abstract class BaseUIApp extends BaseApp {
     protected void onAppImGuiSetup(final ImGuiContext context, final ImGuiHandle.Config config) throws Throwable {}
     
     protected void onAppImGuiStart(long windowHandle) throws Throwable {}
+    
+    protected void onAppImGuiPostStart(long windowHandle) throws Throwable {}
 
     protected void onAppPreUpdate() throws Throwable {}
 

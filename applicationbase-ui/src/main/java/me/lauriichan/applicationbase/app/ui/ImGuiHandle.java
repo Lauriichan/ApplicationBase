@@ -1,4 +1,4 @@
-package me.lauriichan.applicationbase.app;
+package me.lauriichan.applicationbase.app.ui;
 
 import imgui.ImGui;
 import imgui.app.Color;
