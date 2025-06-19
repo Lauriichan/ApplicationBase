@@ -1,7 +1,6 @@
 package me.lauriichan.applicationbase.app.ui.animation;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceList;
@@ -16,6 +15,13 @@ public final class Animation {
         return new Animation.Builder();
     }
 
+    @FunctionalInterface
+    public static interface IAnimationConsumer<T> {
+
+        void accept(Animation animation, T value);
+
+    }
+
     public static class Builder {
 
         private IAnimationTrigger trigger;
@@ -23,11 +29,11 @@ public final class Animation {
 
         private final ReferenceArrayList<IAnimationAnimator> animators = new ReferenceArrayList<>();
 
-        private boolean repeating, regressWhenInactive = true;
+        private boolean repeating, regressionEnabled = true;
 
-        private Consumer<Animation> onRestart;
-        private Consumer<Animation> onActiveChanged;
-        private Consumer<Animation> onDone;
+        private IAnimationConsumer<Boolean> onRestart, onActiveChanged;
+        private IAnimationConsumer<Boolean> onDone;
+        private IAnimationConsumer<Double> onTick;
 
         public IAnimationTrigger trigger() {
             return trigger;
@@ -74,47 +80,53 @@ public final class Animation {
             return this;
         }
 
-        public boolean regressWhenInactive() {
-            return regressWhenInactive;
+        public boolean regressionEnabled() {
+            return regressionEnabled;
         }
 
-        public Builder regressWhenInactive(boolean regressWhenInactive) {
-            this.regressWhenInactive = regressWhenInactive;
+        public Builder regressionEnabled(boolean regressionEnabled) {
+            this.regressionEnabled = regressionEnabled;
             return this;
         }
 
-        public Consumer<Animation> onRestart() {
+        public IAnimationConsumer<Boolean> onRestart() {
             return onRestart;
         }
 
-        public Builder onRestart(Consumer<Animation> onRestart) {
+        public Builder onRestart(IAnimationConsumer<Boolean> onRestart) {
             this.onRestart = onRestart;
             return this;
         }
 
-        public Consumer<Animation> onActiveChanged() {
+        public IAnimationConsumer<Boolean> onActiveChanged() {
             return onActiveChanged;
         }
 
-        public Builder onActiveChanged(Consumer<Animation> onActiveChanged) {
+        public Builder onActiveChanged(IAnimationConsumer<Boolean> onActiveChanged) {
             this.onActiveChanged = onActiveChanged;
             return this;
         }
 
-        public Consumer<Animation> onDone() {
+        public IAnimationConsumer<Boolean> onDone() {
             return onDone;
         }
 
-        public Builder onDone(Consumer<Animation> onDone) {
+        public Builder onDone(IAnimationConsumer<Boolean> onDone) {
             this.onDone = onDone;
             return this;
         }
 
+        public IAnimationConsumer<Double> onTick() {
+            return onTick;
+        }
+
+        public Builder onTick(IAnimationConsumer<Double> onTick) {
+            this.onTick = onTick;
+            return this;
+        }
+
         public Animation build() {
-            if (animators.isEmpty()) {
-                throw new IllegalArgumentException("No animators set");
-            }
-            return new Animation(trigger, function, animators, repeating, regressWhenInactive, onRestart, onActiveChanged, onDone);
+            return new Animation(trigger, function, animators, repeating, regressionEnabled, onRestart, onActiveChanged, onDone, onTick);
         }
 
     }
@@ -124,23 +136,27 @@ public final class Animation {
 
     private final ReferenceList<IAnimationAnimator> animators;
 
-    private final boolean repeating, regressWhenInactive;
-    
-    private final Consumer<Animation> onRestart, onActiveChanged, onDone;
+    private final boolean repeating, regressionEnabled;
 
-    private volatile boolean active = false, done = false;
+    private final IAnimationConsumer<Boolean> onActiveChanged, onDone, onRestart;
+    private final IAnimationConsumer<Double> onTick;
+
+    private volatile boolean active = false, done = true, regressing = false;
     private volatile double progress = 0d, elapsed = 0d;
 
     private Animation(final IAnimationTrigger trigger, IAnimationFunction function, ReferenceArrayList<IAnimationAnimator> animators,
-        boolean repeating, boolean regressWhenInactive, Consumer<Animation> onRestart, Consumer<Animation> onActiveChanged, Consumer<Animation> onDone) {
+        boolean repeating, boolean regressionEnabled, IAnimationConsumer<Boolean> onRestart, IAnimationConsumer<Boolean> onActiveChanged,
+        IAnimationConsumer<Boolean> onDone, IAnimationConsumer<Double> onTick) {
         this.trigger = Objects.requireNonNull(trigger);
         this.function = Objects.requireNonNull(function);
-        this.animators = ReferenceLists.unmodifiable(new ReferenceArrayList<>(animators));
+        this.animators = animators.isEmpty() ? ReferenceLists.emptyList()
+            : ReferenceLists.unmodifiable(new ReferenceArrayList<>(animators));
         this.repeating = repeating;
-        this.regressWhenInactive = regressWhenInactive;
+        this.regressionEnabled = regressionEnabled;
         this.onRestart = onRestart;
         this.onActiveChanged = onActiveChanged;
         this.onDone = onDone;
+        this.onTick = onTick;
     }
 
     public final void trigger() {
@@ -153,8 +169,11 @@ public final class Animation {
             return;
         }
         this.active = active;
+        if (regressing == active) {
+            this.regressing = !active;
+        }
         if (onActiveChanged != null) {
-            onActiveChanged.accept(this);
+            onActiveChanged.accept(this, active);
         }
         this.elapsed = 0d;
         this.done = false;
@@ -162,6 +181,10 @@ public final class Animation {
 
     public final boolean isRepeating() {
         return repeating;
+    }
+
+    public final boolean isRegressing() {
+        return regressing;
     }
 
     public final boolean isActive() {
@@ -176,36 +199,39 @@ public final class Animation {
         return progress;
     }
 
+    public final double elapsed() {
+        return elapsed;
+    }
+
     public final void update(double delta) {
         if (done) {
             return;
         }
-        if (!active) {
-            if (progress == 0d) {
-                return;
-            }
-            if (!regressWhenInactive) {
+        if ((regressing && progress == 0d) || (!regressing && progress == 1d)) {
+            if (!regressing && !regressionEnabled) {
                 progress = 0d;
-                return;
+            } else {
+                regressing = !regressing;
             }
-        }
-        if (active && progress == 1d) {
-            if (!repeating) {
+            if (!active || !repeating) {
                 done = true;
                 if (onDone != null) {
-                    onDone.accept(this);
+                    onDone.accept(this, regressing);
                 }
                 return;
             }
             elapsed = 0d;
             if (onRestart != null) {
-                onRestart.accept(this);
+                onRestart.accept(this, regressing);
             }
         }
-        progress = Math.max(Math.min(function.animate(active, elapsed), 1d), 0d);
+        progress = Math.max(Math.min(function.animate(regressing, elapsed), 1d), 0d);
+        if (onTick != null) {
+            onTick.accept(this, delta);
+        }
         elapsed += delta;
         for (IAnimationAnimator animator : animators) {
-            animator.animate(active, progress);
+            animator.animate(regressing, progress);
         }
     }
 

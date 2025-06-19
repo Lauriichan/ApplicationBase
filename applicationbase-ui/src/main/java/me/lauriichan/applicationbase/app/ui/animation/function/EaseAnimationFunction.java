@@ -17,7 +17,7 @@ public final class EaseAnimationFunction implements IAnimationFunction {
     }
 
     public EaseAnimationFunction easeIn(long easeIn, TimeUnit unit) {
-        this.easeOut = easeIn / (double) unit.convert(1, TimeUnit.SECONDS);
+        this.easeIn = easeIn / (double) unit.convert(1, TimeUnit.SECONDS);
         return this;
     }
 
@@ -36,17 +36,17 @@ public final class EaseAnimationFunction implements IAnimationFunction {
     }
 
     @Override
-    public double animate(boolean active, double elapsed) {
-        if (active) {
-            if (easeIn == 0d) {
-                return 1d;
+    public double animate(boolean regressing, double elapsed) {
+        if (regressing) {
+            if (easeOut == 0d) {
+                return 0d;
             }
-            return ease(elapsed / easeIn);
+            return ease((easeOut - elapsed) / easeOut);
         }
-        if (easeOut == 0d) {
-            return 0d;
+        if (easeIn == 0d) {
+            return 1d;
         }
-        return ease((easeOut - elapsed) / easeOut);
+        return ease(elapsed / easeIn);
     }
 
     private double ease(double progress) {

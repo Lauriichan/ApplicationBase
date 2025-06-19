@@ -24,7 +24,7 @@ public abstract class Component<T extends Component<T>> {
     public static final int ALIGN_BOTTOM = 0x20;
 
     public final PropInt flags = new PropInt(GRAB_WIDTH | GRAB_HEIGHT);
-    
+
     public final PropPadding padding = new PropPadding();
 
     public final PropFloat width = new PropFloat(0f, 0f, Float.MAX_VALUE);
@@ -73,6 +73,7 @@ public abstract class Component<T extends Component<T>> {
         drawList.channelsSetCurrent(bgLayers);
         renderForeground(drawList, x, y, gx, gy, width, height, bgLayers);
         drawList.channelsMerge();
+        renderExtras(x, y, gx, gy, width, height);
     }
 
     protected void componentAction(float gx, float gy, float width, float height) {}
@@ -85,11 +86,14 @@ public abstract class Component<T extends Component<T>> {
         return background.layerAmount();
     }
 
-    protected void renderForeground(ImDrawList drawList, float x, float y, float gx, float gy, float width, float height, int layerOffset) {}
+    protected void renderForeground(ImDrawList drawList, float x, float y, float gx, float gy, float width, float height,
+        int layerOffset) {}
 
     protected int foregroundLayerAmount() {
         return 1;
     }
+
+    protected void renderExtras(float x, float y, float gx, float gy, float width, float height) {}
 
     public final void update(double delta) {
         onUpdate(delta);

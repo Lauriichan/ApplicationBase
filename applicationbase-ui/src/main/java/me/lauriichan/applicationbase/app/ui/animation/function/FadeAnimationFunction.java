@@ -36,17 +36,17 @@ public final class FadeAnimationFunction implements IAnimationFunction {
     }
 
     @Override
-    public double animate(boolean active, double elapsed) {
-        if (active) {
-            if (fadeIn == 0d) {
-                return 1d;
+    public double animate(boolean regressing, double elapsed) {
+        if (regressing) {
+            if (fadeOut == 0d) {
+                return 0d;
             }
-            return elapsed / fadeIn;
+            return (fadeOut - elapsed) / fadeOut;
         }
-        if (fadeOut == 0d) {
-            return 0d;
+        if (fadeIn == 0d) {
+            return 1d;
         }
-        return (fadeOut - elapsed) / fadeOut;
+        return elapsed / fadeIn;
     }
 
 }

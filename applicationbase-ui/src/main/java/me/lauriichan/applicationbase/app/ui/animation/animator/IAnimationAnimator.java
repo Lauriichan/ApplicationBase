@@ -6,6 +6,6 @@ public interface IAnimationAnimator {
         return InterpolationAnimator.builder();
     }
 
-    void animate(boolean active, double progress);
+    void animate(boolean regressing, double progress);
 
 }

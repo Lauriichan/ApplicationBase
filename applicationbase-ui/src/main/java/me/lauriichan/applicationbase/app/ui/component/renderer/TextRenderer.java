@@ -19,7 +19,7 @@ public class TextRenderer implements IRenderer {
 
     public static final int ALIGN_HORIZONTAL_RIGHT = 0x1;
     public static final int ALIGN_HORIZONTAL_CENTER = 0x2;
-    
+
     public static final int ALIGN_VERTICAL_BOTTOM = 0x4;
     public static final int ALIGN_VERTICAL_CENTER = 0x8;
 
@@ -32,8 +32,10 @@ public class TextRenderer implements IRenderer {
 
     public final PropPadding padding = new PropPadding();
     public final PropInt alignment = new PropInt(ALIGN_HORIZONTAL_CENTER | ALIGN_VERTICAL_CENTER);
-    
+
     public final PropBool fineClip = new PropBool(false);
+
+    public final DelegateRenderer background = new DelegateRenderer();
 
     @Override
     public void render(ImDrawList drawList, float x, float y, float width, float height, int layerOffset) {
@@ -57,7 +59,9 @@ public class TextRenderer implements IRenderer {
         } else if (alignment.flag(ALIGN_VERTICAL_BOTTOM)) {
             posY = y + height - renderedSize.y;
         }
-        renderFont.renderText(drawList, fontSize.get(), posX, posY, color.asABGR(), x, y, x + width, y + height, text.get(), null, fineClip.get());
+        background.render(drawList, posX, posY, renderedSize.x, renderedSize.y, layerOffset);
+        renderFont.renderText(drawList, fontSize.get(), posX, posY, color.asABGR(), x, y, x + width, y + height, text.get(), null,
+            fineClip.get());
     }
 
 }

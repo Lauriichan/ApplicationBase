@@ -29,7 +29,7 @@ public final class PropDouble {
     }
 
     public void set(double value) {
-        this.value = value;
+        this.value = clamp(value);
     }
 
     public double clamp(double value) {

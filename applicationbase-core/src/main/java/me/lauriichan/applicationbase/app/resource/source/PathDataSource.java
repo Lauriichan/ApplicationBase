@@ -7,8 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Iterator;
 
 public final class PathDataSource implements IDataSource {
+
+    public static final PathDataSource[] EMPTY = new PathDataSource[0];
 
     private final Path path;
 
@@ -27,8 +30,43 @@ public final class PathDataSource implements IDataSource {
     }
 
     @Override
+    public boolean isContainer() {
+        return Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS);
+    }
+
+    @Override
+    public PathDataSource[] getContents() {
+        if (!Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+            return EMPTY;
+        }
+        try {
+            PathDataSource[] output = Files.list(path).map(PathDataSource::new).toArray(PathDataSource[]::new);
+            if (output.length == 0) {
+                return EMPTY;
+            }
+            return output;
+        } catch (IOException e) {
+            return EMPTY;
+        }
+    }
+
+    @Override
     public Path getSource() {
         return path;
+    }
+
+    @Override
+    public String name() {
+        Path tmp = path.getFileName();
+        if (tmp == null) {
+            return "";
+        }
+        return tmp.toString();
+    }
+
+    @Override
+    public PathDataSource resolve(String path) {
+        return new PathDataSource(this.path.resolve(path));
     }
 
     @Override
@@ -43,6 +81,29 @@ public final class PathDataSource implements IDataSource {
     @Override
     public boolean isWritable() {
         return Files.isWritable(path);
+    }
+
+    @Override
+    public void delete() throws IOException {
+        if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+            deleteDir(path);
+            return;
+        }
+        Files.deleteIfExists(path);
+    }
+
+    private void deleteDir(Path path) throws IOException {
+        Iterator<Path> iter = Files.list(path).iterator();
+        Path child;
+        while (iter.hasNext()) {
+            child = iter.next();
+            if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
+                deleteDir(child);
+                return;
+            }
+            Files.delete(child);
+        }
+        Files.delete(path);
     }
 
     @Override
@@ -63,7 +124,7 @@ public final class PathDataSource implements IDataSource {
     public InputStream openReadableStream() throws IOException {
         return path.getFileSystem().provider().newInputStream(path, StandardOpenOption.READ);
     }
-    
+
     private void ensureCreated() throws IOException {
         if (!Files.exists(path)) {
             Path parent = path.getParent();
@@ -72,7 +133,7 @@ public final class PathDataSource implements IDataSource {
             }
         }
     }
-    
+
     @Override
     public String toString() {
         return new StringBuilder("PathSource[path=").append(path.toString()).append("]").toString();

@@ -10,6 +10,8 @@ import java.io.OutputStreamWriter;
 
 public interface IDataSource {
 
+    final IDataSource[] EMPTY = new IDataSource[0];
+
     /**
      * Check if the source exists
      * 
@@ -27,11 +29,49 @@ public interface IDataSource {
     }
 
     /**
+     * Checks if the source is a container
+     * 
+     * @return if the source is a container
+     */
+    default boolean isContainer() {
+        return false;
+    }
+
+    /**
+     * Gets the contents of this container
+     * 
+     * @return the contents of the container
+     */
+    default IDataSource[] getContents() {
+        return EMPTY;
+    }
+
+    /**
      * Get the source object
      * 
      * @return the source object
      */
     Object getSource();
+    
+    /**
+     * Gets the name of the source target
+     * 
+     * @return the name
+     */
+    default String name() {
+        throw new UnsupportedOperationException();
+    }
+    
+    /**
+     * Resolves a source relative to this source
+     * 
+     * @param path
+     * 
+     * @return the relative source
+     */
+    default IDataSource resolve(String path) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Gets the time that the source was last modified at
@@ -49,6 +89,13 @@ public interface IDataSource {
      */
     default boolean isWritable() {
         return false;
+    }
+
+    /**
+     * Deletes the data source target
+     */
+    default void delete() throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     /**

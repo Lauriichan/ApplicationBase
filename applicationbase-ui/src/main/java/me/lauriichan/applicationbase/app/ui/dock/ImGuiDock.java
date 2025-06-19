@@ -10,6 +10,7 @@ import imgui.type.ImInt;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import me.lauriichan.applicationbase.app.ui.BaseUIApp;
+import me.lauriichan.laylib.logger.ISimpleLogger;
 
 public final class ImGuiDock {
 
@@ -58,6 +59,7 @@ public final class ImGuiDock {
     }
 
     private void setup(BaseUIApp app) {
+        app.onPreDock();
         ImGuiDockNode node = root;
         root = null;
 
@@ -68,6 +70,8 @@ public final class ImGuiDock {
         ImVec2 size = view.getSize();
         ImGui.dockBuilderSetNodeSize(dockId, size.x, size.y);
         node.id.set(dockId);
+        
+        ISimpleLogger logger = app.logger();
 
         Object2ObjectArrayMap<String, ObjectArrayList<String>> map = new Object2ObjectArrayMap<>();
         Function<String, ObjectArrayList<String>> builder = (ignore) -> new ObjectArrayList<String>();
@@ -77,7 +81,7 @@ public final class ImGuiDock {
                 throw new IllegalArgumentException("Duplicated title: " + extension.title());
             }
             list.add(extension.title());
-            System.out.println("Adding '" + extension.title() + "' to '" + extension.dockId() + "'");
+            logger.debug("Adding '" + extension.title() + "' to '" + extension.dockId() + "'");
         });
 
         if (node.first != null) {
@@ -89,7 +93,7 @@ public final class ImGuiDock {
                 if (next.first == null || next.second == null) {
                     continue;
                 }
-                System.out.println("Splitting '" + next.dockId + "': " + next.ratio);
+                logger.debug("Splitting '" + next.dockId + "': " + next.ratio);
                 ImGui.dockBuilderSplitNode(next.id.get(), next.splitDirection, next.ratio, next.first.id, next.second.id);
                 if (next.first.first != null) {
                     queue.push(next.first);
@@ -105,21 +109,22 @@ public final class ImGuiDock {
             ImGuiDockNode dock;
             while (!windowDockQueue.isEmpty()) {
                 dock = windowDockQueue.pop();
-                System.out.println("Docking: " + dock.dockId);
-                dock(dock.id.get(), map.get(dock.dockId));
+                logger.debug("Docking: " + dock.dockId);
+                dock(logger, dock.id.get(), map.get(dock.dockId));
             }
         } else {
-            dock(dockId, map.get("root"));
+            dock(logger, dockId, map.get("root"));
         }
 
         ImGui.dockBuilderFinish(dockId);
+        app.onPostDock();
     }
 
-    private void dock(int id, ObjectArrayList<String> list) {
+    private void dock(ISimpleLogger logger, int id, ObjectArrayList<String> list) {
         ImGui.dockBuilderGetNode(id).setLocalFlags(list == null || list.size() <= 1 ? DOCK_NODE_HIDDEN_FLAGS : DOCK_NODE_FLAGS);
         if (list != null) {
             for (String window : list) {
-                System.out.println("Docking '" + window + "' to '" + id + "'");
+                logger.debug("Docking '" + window + "' to '" + id + "'");
                 ImGui.dockBuilderDockWindow(window, id);
             }
         }

@@ -22,7 +22,10 @@ public abstract class BaseUIApp extends BaseApp {
 
     public static final AppPhase PHASE_IMGUI_START_APP = new AppPhase("imgui-start", true);
     public static final AppPhase PHASE_IMGUI_START_CORE = new AppPhase("imgui-start", false);
-    public static final AppPhase PHASE_IMGUI_POST_START_APP = new AppPhase("imgui-start-post", true);
+    public static final AppPhase PHASE_IMGUI_START_POST_APP = new AppPhase("imgui-start-post", true);
+
+    public static final AppPhase PHASE_IMGUI_DOCK_PRE_APP = new AppPhase("imgui-dock-pre", true);
+    public static final AppPhase PHASE_IMGUI_DOCK_POST_APP = new AppPhase("imgui-dock-post", true);
 
     public static final AppPhase PHASE_IMGUI_UPDATE_PRE_CORE = new AppPhase("imgui-update-pre", false);
     public static final AppPhase PHASE_IMGUI_UPDATE_PRE_APP = new AppPhase("imgui-update-pre", true);
@@ -35,22 +38,26 @@ public abstract class BaseUIApp extends BaseApp {
 
     public static final AppPhase PHASE_IMGUI_DISPOSE_APP = new AppPhase("imgui-dispose", true);
     public static final AppPhase PHASE_IMGUI_DISPOSE_CORE = new AppPhase("imgui-dispose", false);
-    
+
     private volatile ImGuiHandle handle;
-    
+
     private volatile IExtensionPool<DockUIExtension> dockUiPool;
     private volatile ImGuiDock imGuiDock;
-    
+
     public BaseUIApp(File jarFile) {
         super(jarFile);
     }
-    
+
+    public void shutdownUI() {
+        handle.setWindowShouldClose();
+    }
+
     @Override
     protected void onCoreReady() throws Throwable {
         super.onCoreReady();
         logger().setDebug(true);
     }
-    
+
     @Override
     protected void onCoreExecute() throws Throwable {
         super.onCoreExecute();
@@ -58,16 +65,16 @@ public abstract class BaseUIApp extends BaseApp {
         createDock(node);
         imGuiDock = node.build();
     }
-    
+
     @Override
     protected void onCorePostExecute() throws Throwable {
         (handle = new ImGuiHandle(this)).execute();
     }
-    
+
     /*
      * Implementation
      */
-    
+
     final void onImGuiConfigure(final ImGuiHandle.Config config) {
         try {
             onCoreImGuiConfigure(config);
@@ -80,7 +87,7 @@ public abstract class BaseUIApp extends BaseApp {
             onAppError(PHASE_IMGUI_CONFIGURE_APP, throwable);
         }
     }
-    
+
     final void onGlfwSetup(final ImGuiHandle.Config config) {
         try {
             onCoreGlfwSetup(config);
@@ -93,7 +100,7 @@ public abstract class BaseUIApp extends BaseApp {
             onAppError(PHASE_IMGUI_CONFIGURE_APP, throwable);
         }
     }
-    
+
     final void onImGuiSetup(final ImGuiContext context, final ImGuiHandle.Config config) {
         try {
             onCoreImGuiSetup(context, config);
@@ -106,7 +113,7 @@ public abstract class BaseUIApp extends BaseApp {
             onAppError(PHASE_IMGUI_SETUP_APP, throwable);
         }
     }
-    
+
     final void onImGuiStart() {
         try {
             onAppImGuiStart(handle.handle());
@@ -121,10 +128,26 @@ public abstract class BaseUIApp extends BaseApp {
         try {
             onAppImGuiPostStart(handle.handle());
         } catch (final Throwable throwable) {
-            onAppError(PHASE_IMGUI_POST_START_APP, throwable);
+            onAppError(PHASE_IMGUI_START_POST_APP, throwable);
         }
     }
-    
+
+    public final void onPreDock() {
+        try {
+            onAppPreDock();
+        } catch (final Throwable throwable) {
+            onAppError(PHASE_IMGUI_DOCK_PRE_APP, throwable);
+        }
+    }
+
+    public final void onPostDock() {
+        try {
+            onAppPostDock();
+        } catch (final Throwable throwable) {
+            onAppError(PHASE_IMGUI_DOCK_POST_APP, throwable);
+        }
+    }
+
     final void onPreUpdate() {
         try {
             onCorePreUpdate();
@@ -137,7 +160,7 @@ public abstract class BaseUIApp extends BaseApp {
             onAppError(PHASE_IMGUI_UPDATE_PRE_APP, throwable);
         }
     }
-    
+
     final void onUpdate() {
         try {
             onCoreUpdate();
@@ -150,7 +173,7 @@ public abstract class BaseUIApp extends BaseApp {
             onAppError(PHASE_IMGUI_UPDATE_APP, throwable);
         }
     }
-    
+
     final void onPostUpdate() {
         try {
             onCorePostUpdate();
@@ -162,9 +185,9 @@ public abstract class BaseUIApp extends BaseApp {
         } catch (final Throwable throwable) {
             onAppError(PHASE_IMGUI_UPDATE_POST_APP, throwable);
         }
-    
+
     }
-    
+
     final void onDispose() {
         try {
             onAppDispose();
@@ -177,7 +200,7 @@ public abstract class BaseUIApp extends BaseApp {
             onAppError(PHASE_IMGUI_DISPOSE_CORE, throwable);
         }
     }
-    
+
     /*
      * Core
      */
@@ -191,7 +214,7 @@ public abstract class BaseUIApp extends BaseApp {
         io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
         io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
     }
-    
+
     protected void onCoreImGuiStart(long windowHandle) throws Throwable {
         dockUiPool = extension(DockUIExtension.class, true);
     }
@@ -216,10 +239,14 @@ public abstract class BaseUIApp extends BaseApp {
     protected void onAppGlfwSetup(final ImGuiHandle.Config config) throws Throwable {}
 
     protected void onAppImGuiSetup(final ImGuiContext context, final ImGuiHandle.Config config) throws Throwable {}
-    
+
     protected void onAppImGuiStart(long windowHandle) throws Throwable {}
-    
+
     protected void onAppImGuiPostStart(long windowHandle) throws Throwable {}
+
+    protected void onAppPreDock() throws Throwable {}
+
+    protected void onAppPostDock() throws Throwable {}
 
     protected void onAppPreUpdate() throws Throwable {}
 
@@ -228,21 +255,21 @@ public abstract class BaseUIApp extends BaseApp {
     protected void onAppPostUpdate() throws Throwable {}
 
     protected void onAppDispose() throws Throwable {}
-    
+
     /*
      * Any abstraction 
      */
-    
+
     protected void createDock(DockNode node) {}
-    
+
     /*
      * Getter
      */
-    
+
     public final ImGuiHandle handle() {
         return handle;
     }
-    
+
     public final IExtensionPool<DockUIExtension> dockUiPool() {
         return dockUiPool;
     }

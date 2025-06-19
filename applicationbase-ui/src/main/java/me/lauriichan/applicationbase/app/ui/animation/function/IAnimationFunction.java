@@ -10,6 +10,6 @@ public interface IAnimationFunction {
         return new FadeAnimationFunction();
     }
 
-    double animate(boolean active, double elapsed);
+    double animate(boolean regressing, double elapsed);
 
 }

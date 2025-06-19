@@ -20,24 +20,24 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 public final class ImGuiHandle {
-    
+
     public static class Config {
-        
+
         public String title = "Application";
         public int width = 1280;
         public int height = 720;
-        
+
         public boolean fullscreen = false;
         public boolean borderless = false;
         public boolean transparent = false;
-        
+
     }
 
     public final Color background = new Color(0f, 0f, 0f, 0f);
-    
+
     private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
     private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
-    
+
     private final BaseUIApp app;
 
     private String glslVersion = null;
@@ -46,11 +46,11 @@ public final class ImGuiHandle {
     ImGuiHandle(BaseUIApp app) {
         this.app = app;
     }
-    
+
     public long handle() {
         return handle;
     }
-    
+
     final void execute() {
         Config config = new Config();
         app.onImGuiConfigure(config);
@@ -59,7 +59,7 @@ public final class ImGuiHandle {
         imGuiGlfw.init(handle, true);
         imGuiGl3.init(glslVersion);
         app.onImGuiStart();
-        while(!GLFW.glfwWindowShouldClose(handle)) {
+        while (!GLFW.glfwWindowShouldClose(handle)) {
             render();
         }
         app.shutdown();
@@ -72,7 +72,11 @@ public final class ImGuiHandle {
         Objects.requireNonNull(GLFW.glfwSetErrorCallback(null)).free();
         app.onDispose();
     }
-    
+
+    final void setWindowShouldClose() {
+        GLFW.glfwSetWindowShouldClose(handle, true);
+    }
+
     private void initWindow(final Config config) {
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -81,9 +85,9 @@ public final class ImGuiHandle {
         }
 
         decideGlGlslVersions();
-        
+
         app.onGlfwSetup(config);
-        
+
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
         if (config.borderless) {
             GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
@@ -129,19 +133,19 @@ public final class ImGuiHandle {
             }
         });
     }
-    
+
     private void render() {
         // Start Frame
         clearBuffer();
         imGuiGl3.newFrame();
         imGuiGlfw.newFrame();
         ImGui.newFrame();
-        
+
         // Application Frame
         app.onPreUpdate();
         app.onUpdate();
         app.onPostUpdate();
-        
+
         // End Frame
         ImGui.render();
         imGuiGl3.renderDrawData(ImGui.getDrawData());
@@ -172,6 +176,7 @@ public final class ImGuiHandle {
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 0);
         }
     }
+
     private void clearBuffer() {
         GL32.glClearColor(background.getRed(), background.getGreen(), background.getBlue(), background.getAlpha());
         GL32.glClear(GL32.GL_COLOR_BUFFER_BIT | GL32.GL_DEPTH_BUFFER_BIT);

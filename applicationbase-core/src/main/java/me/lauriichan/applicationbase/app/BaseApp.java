@@ -203,7 +203,7 @@ public abstract class BaseApp {
      */
     private final void onLoad() {
         try {
-            onAppPreload();
+            onAppPreLoad();
         } catch (final Throwable throwable) {
             onAppError(PHASE_PRELOAD_APP, throwable);
         }
@@ -289,14 +289,46 @@ public abstract class BaseApp {
     }
 
     public final IDataSource externalResource(final String internalPath, final String externalPath) throws IOException {
+        return externalResource(internalPath, externalPath, false);
+    }
+
+    public final IDataSource externalResource(final String internalPath, final String externalPath, boolean forceSameContents) throws IOException {
         IDataSource internal = resourceManager.resolve(internalPath);
         IDataSource external = resourceManager.resolve(externalPath);
-        try (OutputStream output = external.openWritableStream()) {
-            try (InputStream input = internal.openReadableStream()) {
-                input.transferTo(output);
+        transferOutside(internal, external, forceSameContents);
+        return external;
+    }
+
+    private final void transferOutside(IDataSource source, IDataSource target, boolean forceSameContents) throws IOException {
+        if (!source.isContainer()) {
+            try (OutputStream output = target.openWritableStream()) {
+                try (InputStream input = source.openReadableStream()) {
+                    input.transferTo(output);
+                }
+            }
+            return;
+        }
+        IDataSource[] contents = source.getContents();
+        for (IDataSource content : contents) {
+            transferOutside(content, target.resolve(content.name()), forceSameContents);
+        }
+        if (forceSameContents) {
+            IDataSource[] outside = target.getContents();
+            if (contents.length != outside.length) {
+                for (IDataSource tmp1 : outside) {
+                    boolean found = false;
+                    for (IDataSource tmp2 : contents) {
+                        if (tmp1.name().equals(tmp2.name())) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        tmp1.delete();
+                    }
+                }
             }
         }
-        return external;
     }
 
     public final <E extends IExtension> IExtensionPool<E> extension(final Class<E> type, final boolean instantiate) {
@@ -408,7 +440,7 @@ public abstract class BaseApp {
 
     protected void onAppProperties(CompositeProperty properties) {}
 
-    protected void onAppPreload() throws Throwable {}
+    protected void onAppPreLoad() throws Throwable {}
 
     protected void onAppLoad() throws Throwable {}
 

@@ -29,7 +29,7 @@ public final class PropFloat {
     }
 
     public void set(float value) {
-        this.value = value;
+        this.value = clamp(value);
     }
 
     public float clamp(float value) {

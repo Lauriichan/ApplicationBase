@@ -58,7 +58,7 @@ public final class InterpolationAnimator<T> implements IAnimationAnimator {
     }
     
     @Override
-    public void animate(boolean active, double progress) {
+    public void animate(boolean regressing, double progress) {
         interpolator.manipulate(start, end, progress);
     }
 
