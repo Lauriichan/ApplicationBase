@@ -2,10 +2,10 @@ package me.lauriichan.applicationbase.app.ui.component.property;
 
 public final class PropPadding {
 
-    public final PropFloat left = new PropFloat(0f);
-    public final PropFloat right = new PropFloat(0f);
-    public final PropFloat top = new PropFloat(0f);
-    public final PropFloat bottom = new PropFloat(0f);
+    public final PropFloat left = new PropFloat(0f, 0f, Float.MAX_VALUE);
+    public final PropFloat right = new PropFloat(0f, 0f, Float.MAX_VALUE);
+    public final PropFloat top = new PropFloat(0f, 0f, Float.MAX_VALUE);
+    public final PropFloat bottom = new PropFloat(0f, 0f, Float.MAX_VALUE);
     
     public PropPadding() {}
     

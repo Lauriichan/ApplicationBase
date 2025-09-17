@@ -1,6 +1,7 @@
 package me.lauriichan.applicationbase.app.ui.component;
 
 import me.lauriichan.applicationbase.app.ui.DefaultConstants;
+import me.lauriichan.applicationbase.app.ui.component.property.PropFloat;
 import me.lauriichan.applicationbase.app.ui.component.property.PropInt;
 
 import imgui.ImGui;
@@ -27,18 +28,18 @@ public final class DrawContext {
     private final ReferenceArrayList<CalculatedComponent> components = new ReferenceArrayList<>();
     private final boolean vertical;
 
-    private volatile float itemSpacing = DefaultConstants.ITEM_SPACING.get();
+    public final PropFloat itemSpacing = new PropFloat(DefaultConstants.ITEM_SPACING.get(), 0f, Float.MAX_VALUE);
 
     private DrawContext(final boolean vertical) {
         this.vertical = vertical;
     }
 
     public final float itemSpacing() {
-        return itemSpacing;
+        return itemSpacing.get();
     }
 
     public final DrawContext itemSpacing(float itemSpacing) {
-        this.itemSpacing = itemSpacing < 0 ? DefaultConstants.ITEM_SPACING.get() : itemSpacing;
+        this.itemSpacing.set(itemSpacing);
         return this;
     }
 
@@ -64,16 +65,25 @@ public final class DrawContext {
         components.add(calc);
     }
 
-    public final void render(float maxX, float maxY) {
+    public final void render(float xOffset, float yOffset, float maxX, float maxY) {
         try {
-            internalRender(maxX, maxY);
+            internalRender(xOffset, yOffset, maxX, maxY);
         } finally {
             components.clear();
         }
     }
 
-    private void internalRender(float maxX, float maxY) {
-        float winX = ImGui.getWindowPosX(), winY = ImGui.getWindowPosY();
+    public final void render(float maxX, float maxY) {
+        try {
+            internalRender(0, 0, maxX, maxY);
+        } finally {
+            components.clear();
+        }
+    }
+
+    private void internalRender(float xOffset, float yOffset, float maxX, float maxY) {
+        float itemSpacing = this.itemSpacing.get();
+        float winX = ImGui.getWindowPosX() + xOffset, winY = ImGui.getWindowPosY() + yOffset;
         float reservedHeight = vertical ? (components.size() - 1) * itemSpacing : 0f;
         float reservedWidth = vertical ? 0f : (components.size() - 1) * itemSpacing;
         float grabHeight = 0f;
